@@ -11,9 +11,17 @@ import MobileCoreServices
 
 class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
 
+    var myImageView: UIImageView = UIImageView()
+    var scrollView: UIScrollView = UIScrollView()
 
-    @IBOutlet weak var myImageView: UIImageView!
     override func viewDidLoad() {
+        myImageView = UIImageView(image: UIImage(named: "smile474x474"))
+        scrollView = UIScrollView(frame: view.bounds)
+        scrollView.contentSize = myImageView.bounds.size
+        scrollView.autoresizingMask = UIViewAutoresizing.FlexibleWidth
+        scrollView.addSubview(myImageView)
+        view.addSubview(scrollView)
+        view.sendSubviewToBack(scrollView)
     }
 
     @IBAction func photoFromLibrary(sender: UIBarButtonItem) {
@@ -48,7 +56,10 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
     
    
     func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : AnyObject]) {
+
         let backgroundImage = info[UIImagePickerControllerEditedImage] as! UIImage
+        myImageView = UIImageView(image: backgroundImage)
+
         let chosenImage = CIImage(image: info[UIImagePickerControllerEditedImage] as! UIImage)!
 
         let detector = CIDetector(
@@ -56,40 +67,40 @@ class ViewController: UIViewController, UIImagePickerControllerDelegate, UINavig
         
         let faces = detector.featuresInImage(chosenImage, options: [CIDetectorSmile: true]) as! [CIFaceFeature]
 
-        print("faces: \(faces.count)")
         for face in faces {
-            
-            let frame = CGRect(
-                x: face.mouthPosition.x - (0.5 * face.bounds.width), //bounds.origin.x,
-                y: face.mouthPosition.y - (0.5 * face.bounds.height),
-                width: face.bounds.size.width,
-                height: face.bounds.size.height)
-
-            let borderView = UIView(frame: frame )
+            let borderView = UIView(frame: face.bounds)
             borderView.layer.borderWidth = 1
             borderView.layer.borderColor = UIColor.redColor().CGColor
            
-            let labelX = borderView.frame.origin.x
-            let labelY = borderView.frame.origin.y
+            let labelX = borderView.frame.origin.x + (borderView.bounds.width / 2.0)
+            let labelY = borderView.frame.origin.y + borderView.bounds.height
             let label = UILabel(frame: CGRectMake(labelX, labelY, face.bounds.size.width, 14))
-
-            print("found smile? \(face.hasSmile ? true : false)")
             label.text = face.hasSmile ? "😀" : "😡"
 
-            self.view.addSubview(label)
-            self.view.addSubview(borderView)
+            myImageView.addSubview(label)
+            myImageView.addSubview(borderView)
+        }
+        //let newImageView = UIImageView(
+        scrollView.subviews.forEach { subView in
+            subView.removeFromSuperview()
         }
 
-        myImageView.image = backgroundImage
-        //myImageView.layer.setAffineTransform(CGAffineTransformMakeScale(1, -1))
-        //self.view.layer.setAffineTransform(CGAffineTransformMakeScale(1, -1))
+        scrollView.addSubview(myImageView)
+        scrollView.contentSize.width = myImageView.bounds.size.width * 4.0
+        scrollView.contentSize.height = myImageView.bounds.size.height * 4.0
         dismissViewControllerAnimated(true, completion: nil)
     }
     func imagePickerControllerDidCancel(picker: UIImagePickerController) {
         dismissViewControllerAnimated(true, completion: nil)
     }
 
-
+    //MARK Debug methods---------------------------------
+    override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
+        let touch = touches.first
+        print("Touch x,y is: \(touch?.locationInView(myImageView).x),\(touch?.locationInView(myImageView).y)")
+    }
+    
+    
 
 }
 
